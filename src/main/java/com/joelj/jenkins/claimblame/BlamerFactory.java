@@ -6,6 +6,9 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 /**
+ * Temporary location to get the blamer for a job.
+ * TODO: Add extension points to allow others to create different blamers.
+ * TODO: 	For example, have it sync with bug trackers rather than the filesystem.
  * User: joeljohnson
  * Date: 5/26/12
  * Time: 12:22 AM

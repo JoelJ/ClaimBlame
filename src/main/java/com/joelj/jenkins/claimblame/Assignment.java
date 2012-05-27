@@ -1,11 +1,11 @@
 package com.joelj.jenkins.claimblame;
 
 /**
- * Created with IntelliJ IDEA.
+ * Represents a assignment for a test. Including the user it's assigned to and the status of the assignment.
+ *
  * User: joeljohnson
  * Date: 5/26/12
  * Time: 12:30 AM
- * To change this template use File | Settings | File Templates.
  */
 public class Assignment {
 	private final String userId;

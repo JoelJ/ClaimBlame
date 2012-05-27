@@ -3,6 +3,8 @@ package com.joelj.jenkins.claimblame;
 import hudson.model.Saveable;
 import hudson.model.User;
 
+import java.io.IOException;
+
 /**
  * User: joeljohnson
  * Date: 4/11/12
@@ -14,4 +16,7 @@ public interface Blamer {
 
 	void setStatus(String testName, Status status);
 	Status getStatus(String testName);
+
+	void save() throws IOException;
+	void load();
 }

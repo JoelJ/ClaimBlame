@@ -14,6 +14,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
+ * Stores the claimed tests data on the filesystem in ${JENKINS_HOME}/claimblame/${JOB_NAME}/config.xml
+ * TODO: Break out an abstract base class so that it's easier to create other extension points
  * User: joeljohnson
  * Date: 4/11/12
  * Time: 7:56 PM
