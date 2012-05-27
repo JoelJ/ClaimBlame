@@ -1,0 +1,33 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+	<span id="BlameActionBadge">
+		<link href="${rootURL}/plugin/ClaimBlame/claimBlame.css" rel="stylesheet" type="text/css"><!--empty--></link><!--TODO pull this out so it's only loaded once -->
+		<script src="${rootURL}/plugin/ClaimBlame/claimBlame.js"><!--empty--></script><!--TODO pull this out so it's only loaded once -->
+
+
+		<j:set var="culprit" value="${it.culprit}"/>
+		<j:set var="status" value="${it.status}"/>
+
+		<select name="culprit" onchange="claim('${it.url}', this)">
+			<option value="{null}">-- Unassigned --</option>
+			<j:forEach items="${it.users}" var="user">
+				<j:if test="${culprit != null and user.id == culprit.id}">
+					<option value="${user.id}" selected="true">${user.displayName}</option>
+				</j:if>
+				<!--else--> <j:if test="${!(culprit != null and user.id == culprit.id)}">
+					<option value="${user.id}">${user.displayName}</option>
+				</j:if>
+			</j:forEach>
+		</select>
+
+		<span class="status ${status} ${(culprit != null and it.currentUser.id == culprit.id ? 'isCulprit' : '')}">
+			<j:if test="${status != 'Accepted'}">
+				<input type="button" name="Accepted" value="Accept" onclick="changeStatus('${it.url}', this)"/>
+			</j:if>
+			<j:if test="${status == 'Accepted'}">
+				<input type="button" name="Done" value="Done" onclick="changeStatus('${it.url}', this)"/>
+			</j:if>
+
+			<span>${status}</span>
+		</span>
+	</span>
+</j:jelly>
