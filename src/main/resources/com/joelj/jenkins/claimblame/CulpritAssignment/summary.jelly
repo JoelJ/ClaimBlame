@@ -1,0 +1,41 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
+         xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <link href="${rootURL}/plugin/ClaimBlame/claimBlame.css" rel="stylesheet" type="text/css"><!--empty--></link><!--TODO pull this out so it's only loaded once -->
+    <script src="${rootURL}/plugin/ClaimBlame/claimBlame.js"><!--empty--></script><!--TODO pull this out so it's only loaded once -->
+
+    <j:set var="assignments" value="${it.findAssignments()}"/>
+    <j:if test="${!assignmentValues.isEmpty()}">
+        <table cellpadding="3">
+            <tr>
+                <th>Test</th>
+                <th>Status</th>
+            </tr>
+            <j:set var="rootURL" value="http://10.141.1.30:8080"/>
+        <j:set var="assignmentValues" value="${assignments.values()}"/>
+
+        <j:forEach var="assignment" items="${assignmentValues}">
+            <tr>
+                <td>
+                    <a href="${rootURL}/${assignment.testUrl}">${assignment.testName}</a>
+                </td>
+                <td>
+                    <j:set value="${it.getStatusValues()}" var="statusValues"/>
+                    <select class="status" name="status" onchange="changeUserPageStatus('${rootURL}/${assignment.testUrl}',this)">
+                        <j:forEach items="${statusValues}" var="statusVal">
+                            <j:if test="${statusVal == assignment.testStatus}">
+                                <option value="${statusVal}" selected="true" >${statusVal}</option>
+                            </j:if>
+                            <!--else-->
+                            <j:if test="${statusVal != assignment.testStatus}">
+                                <option value="${statusVal}">${statusVal}</option>
+                            </j:if>
+                        </j:forEach>
+                    </select>
+                </td>
+            </tr>
+        </j:forEach>
+        </table>
+        <input type="button" onclick="acceptAll()" value="Accept All"/>
+        <input type="button" onclick="doneAll()" value="Down with All!"/>
+    </j:if>
+</j:jelly>

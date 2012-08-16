@@ -34,6 +34,20 @@ if(!window.changeStatus) {
 	}
 }
 
+if(!window.changeUserPageStatus) {
+    window.changeUserPageStatus = function(url, select) {
+        new Ajax.Request(url+'/blame/status', {
+            method: 'post',
+            parameters: {status: select.value},
+            onSuccess: function(transport) {
+            },
+            onFailure: function() {
+                console.log('Change User status went wrong...');
+            }
+        });
+    }
+}
+
 function reloadStatusSpan(statusSpan, newStatus, isCulprit) {
 	statusSpan.setAttribute('class', "status " + newStatus + (isCulprit ? " isCulprit" : ""));
 	statusSpan.down('span').innerText = newStatus;
@@ -46,4 +60,31 @@ function reloadStatusSpan(statusSpan, newStatus, isCulprit) {
 		button.value = 'Done';
 		button.name = 'Done';
 	}
+}
+if(!window.acceptAll){
+    window.acceptAll= function(){
+        var elementsByClassName = document.getElementsByClassName("status");
+
+        for(var i=0;i<elementsByClassName.length;i++){
+            var value = elementsByClassName[i].options[elementsByClassName[i].selectedIndex].value;
+            if(value!='Accepted' && value!='Done'){
+                elementsByClassName[i].value='Accepted';
+                elementsByClassName[i].onchange();
+            }
+        }
+    }
+}
+
+if(!window.doneAll){
+    window.doneAll= function(){
+        var elementsByClassName = document.getElementsByClassName("status");
+
+        for(var i=0;i<elementsByClassName.length;i++){
+            var value = elementsByClassName[i].options[elementsByClassName[i].selectedIndex].value;
+            if(value=='Accepted'){
+                elementsByClassName[i].value='Done';
+                elementsByClassName[i].onchange();
+            }
+        }
+    }
 }

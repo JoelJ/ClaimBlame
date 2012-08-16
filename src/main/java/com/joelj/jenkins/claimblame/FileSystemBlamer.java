@@ -26,7 +26,7 @@ public class FileSystemBlamer implements Blamer, Saveable {
 	private transient boolean loaded = false;
 
 	private String jobName;
-	private Map<String, Assignment> culprits;
+	public Map<String, Assignment> culprits;
 
 	FileSystemBlamer(String jobName) {
 		this.jobName = jobName;
@@ -37,7 +37,7 @@ public class FileSystemBlamer implements Blamer, Saveable {
 	public void setCulprit(String testName, User user) {
 		if(user != null) {
 			culprits.put(testName, new Assignment(user.getId()));
-		} else {
+        } else {
 			culprits.remove(testName);
 		}
 		try {
@@ -64,7 +64,6 @@ public class FileSystemBlamer implements Blamer, Saveable {
 		if(culprits.containsKey(testName)) {
 			Assignment assignment = culprits.get(testName);
 			assignment.setStatus(status);
-
 			try {
 				save();
 			} catch (IOException e) {
