@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -35,17 +36,17 @@ public class FileSystemBlamer implements Blamer, Saveable {
 
 	@Override
 	public void setCulprit(String testName, User user) {
-		if(user != null) {
-			culprits.put(testName, new Assignment(user.getId()));
+        if (user != null) {
+            getCulprits().put(testName, new Assignment(user.getId()));
         } else {
-			culprits.remove(testName);
-		}
-		try {
-			save();
-		} catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "Failed to save.", e);
-		}
-	}
+            getCulprits().remove(testName);
+        }
+        try {
+            save();
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "Failed to save.", e);
+        }
+    }
 
 	@Override
 	public User getCulprit(String testName) {
@@ -59,9 +60,13 @@ public class FileSystemBlamer implements Blamer, Saveable {
 		}
 	}
 
+    public Set<String> getTests() {
+        return getCulprits().keySet();
+    }
+
 	@Override
 	public void setStatus(String testName, Status status) {
-		if(culprits.containsKey(testName)) {
+        if (getCulprits().containsKey(testName)) {
 			Assignment assignment = culprits.get(testName);
 			assignment.setStatus(status);
 			try {
@@ -114,5 +119,9 @@ public class FileSystemBlamer implements Blamer, Saveable {
 
 	protected static File getRootDir() {
 		return new File(Hudson.getInstance().getRootDir(), "claimBlame");
-	}
+    }
+
+    public Map<String, Assignment> getCulprits() {
+        return culprits;
+    }
 }

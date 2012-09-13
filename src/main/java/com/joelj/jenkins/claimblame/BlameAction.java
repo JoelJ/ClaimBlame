@@ -3,16 +3,14 @@ package com.joelj.jenkins.claimblame;
 import hudson.model.Hudson;
 import hudson.model.User;
 import hudson.tasks.junit.TestAction;
-import hudson.tasks.junit.TestObject;
+import net.sf.json.JSONObject;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * User: joeljohnson
@@ -31,84 +29,162 @@ public class BlameAction extends TestAction {
 		this.testUrl = testUrl;
 	}
 
-	public void doBlame(StaplerRequest request, StaplerResponse response) throws IOException, ServletException {
+    public void doBlame(StaplerRequest request, StaplerResponse response) throws IOException, ServletException {
+        String userID = request.getParameter("userID");
+        if (userID != null && !userID.equals("{null}")) {
+            User userToBlame = User.get(userID, false); //User.get returns a dummy object if it doesn't exist
+            if (User.getAll().contains(userToBlame)) {
+                blamer.setCulprit(testName, userToBlame);
+				User current=User.current();
+				if(current!=null && userToBlame.getId().equals(current.getId())){
+					blamer.setStatus(testName,Status.Accepted);
+				}
+            }
+        } else {
+            blamer.setCulprit(testName, null);
+        }
+        writeCulpritStatusToStream(response.getOutputStream());
+    }
+
+    public void doBulkBlame(StaplerRequest request, StaplerResponse response) throws IOException {
+        String userID = request.getParameter("userID");
+        String[] testNames = request.getParameterValues("testNames");
+        if (userID != null && !userID.equals("{null}")) {
+            User userToBlame = User.get(userID, false);
+            if (User.getAll().contains(userToBlame)) {
+                for (String name : testNames) {
+
+                    blamer.setCulprit(name, userToBlame);
+					User current=User.current();
+					if(current!=null && userToBlame.getId().equals(current.getId())){
+						blamer.setStatus(name,Status.Accepted);
+					}
+                }
+            }
+        } else {
+            for (String name : testNames) {
+                blamer.setCulprit(name, null);
+            }
+        }
+		response.setContentType("application/json");
+        writeBulkCulpritStatusToStream(response.getOutputStream(), testNames);
+    }
+
+	public void doBulkDone(StaplerRequest request, StaplerResponse response) throws IOException {
 		String userID = request.getParameter("userID");
+		String[] testNames = request.getParameterValues("testNames");
 		if (userID != null && !userID.equals("{null}")) {
-			User userToBlame = User.get(userID, false); //User.get returns a dummy object if it doesn't exist
+			User userToBlame = User.get(userID, false);
 			if (User.getAll().contains(userToBlame)) {
-				blamer.setCulprit(testName, userToBlame);
+				for (String name : testNames) {
+					User current=User.current();
+					if(current!=null && userToBlame.getId().equals(current.getId())){
+						blamer.setStatus(name,Status.Done);
+					}
+				}
 			}
 		} else {
-			blamer.setCulprit(testName, null);
+			for (String name : testNames) {
+				blamer.setCulprit(name, null);
+			}
 		}
-		writeCulpritStatusToStream(response.getOutputStream());
+		response.setContentType("application/json");
+		writeBulkCulpritStatusToStream(response.getOutputStream(), testNames);
 	}
 
-	public void doStatus(StaplerRequest request, StaplerResponse response) throws IOException, ServletException {
-		String statusString = request.getParameter("status");
-		if (statusString != null) {
-			Status status = Status.valueOf(statusString);
-			blamer.setStatus(testName, status);
-		} else {
-			blamer.setStatus(testName, Status.NotAccepted);
+
+    public void doStatus(StaplerRequest request, StaplerResponse response) throws IOException, ServletException {
+        String statusString = request.getParameter("status");
+        if (statusString != null) {
+            Status status = Status.valueOf(statusString);
+            blamer.setStatus(testName, status);
+        } else {
+            blamer.setStatus(testName, Status.NotAccepted);
+        }
+        response.setContentType("application/json");
+        writeCulpritStatusToStream(response.getOutputStream());
+    }
+
+	public void doBulkStatus(StaplerRequest request, StaplerResponse response) throws IOException {
+		String[] testNames=request.getParameterValues("testNames");
+		String statusValue=request.getParameter("status");
+
+		for (String name : testNames) {
+			blamer.setStatus(name, Status.valueOf(statusValue));
 		}
-		writeCulpritStatusToStream(response.getOutputStream());
+		response.setContentType("application/json");
+		writeBulkCulpritStatusToStream(response.getOutputStream(), testNames);
 	}
 
-	private void writeCulpritStatusToStream(ServletOutputStream outputStream) throws IOException {
-		User culprit = getCulprit();
-		outputStream.print("{");
-		outputStream.print("\"culprit\":" + (culprit == null ? "null" : ("\"" + culprit.getId() + "\"")) + ",");
-		outputStream.print("\"status\":\"" + getStatus() + "\",");
-		outputStream.print("\"isYou\":" + (culprit != null && culprit.equals(User.current())) + ",");
-		outputStream.print("}");
-		outputStream.flush();
-		outputStream.close();
-	}
+    private void writeBulkCulpritStatusToStream(ServletOutputStream outputStream, String[] testNames) throws IOException {
+        JSONObject jsonObject = new JSONObject();
+        for (String name : testNames) {
+            Map<String, String> testData = new HashMap<String, String>();
+            User culprit = getCulprit(name);
+            testData.put("culprit", culprit == null ? "null" : culprit.getId());
+            testData.put("status", getStatus(name).name());
+            testData.put("isYou", String.valueOf((culprit != null && culprit.equals(User.current()))));
+            jsonObject.put(name, testData);
+        }
+        outputStream.print(jsonObject.toString());
+        outputStream.flush();
+        outputStream.close();
+    }
 
-	public String getUrl() {
-		return Hudson.getInstance().getRootUrl() + this.testUrl;
-	}
+    private void writeCulpritStatusToStream(ServletOutputStream outputStream) throws IOException {
+        User culprit = getCulprit(testName);
+        outputStream.print("{");
+        outputStream.print("\"culprit\":" + (culprit == null ? "null" : ("\"" + culprit.getId() + "\"")) + ",");
+        outputStream.print("\"status\":\"" + getStatus(testName) + "\",");
+        outputStream.print("\"isYou\":" + (culprit != null && culprit.equals(User.current())) + ",");
+        outputStream.print("}");
+        outputStream.flush();
+        outputStream.close();
+    }
 
-	public User getCulprit() {
-		return blamer.getCulprit(testName);
-	}
+    public String getUrl() {
+        return Hudson.getInstance().getRootUrl() + this.testUrl;
+    }
 
-	public Status getStatus() {
-		return blamer.getStatus(testName);
-	}
+    public User getCulprit(String testName) {
+        return blamer.getCulprit(testName);
+    }
 
-	public List<User> getUsers() {
-		List<User> allUsers = new LinkedList<User>(User.getAll());
-		Collections.sort(allUsers);
-		return allUsers;
-	}
+    public Status getStatus(String testName) {
+        return blamer.getStatus(testName);
+    }
 
-	public User getCurrentUser() {
-		return User.current();
-	}
+    public List<User> getUsers() {
+        List<User> allUsers = new LinkedList<User>(User.getAll());
+        Collections.sort(allUsers);
+        return allUsers;
+    }
 
-	public String getTestName() {
-		return testName;
-	}
+    public User getCurrentUser() {
+        return User.current();
+    }
 
-	public Blamer getBlamer() {
-		return blamer;
-	}
+    public String getTestName() {
+        return testName;
+    }
 
-	public String getTestUrl() {
-		return testUrl;
-	}
+    public Blamer getBlamer() {
+        return blamer;
+    }
 
-	public String getIconFileName() {
-		return null;
-	}
+    public String getTestUrl() {
+        return testUrl;
+    }
 
-	public String getDisplayName() {
-		return null;
-	}
+    public String getIconFileName() {
+        return null;
+    }
 
-	public String getUrlName() {
-		return "blame";
-	}
+    public String getDisplayName() {
+        return null;
+    }
+
+    public String getUrlName() {
+        return "blame";
+    }
 }
