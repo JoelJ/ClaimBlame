@@ -51,9 +51,8 @@ public class BlameAction extends TestAction {
         String[] testNames = request.getParameterValues("testNames");
         if (userID != null && !userID.equals("{null}")) {
             User userToBlame = User.get(userID, false);
-            if (User.getAll().contains(userToBlame)) {
+            if (testNames!=null && User.getAll().contains(userToBlame)) {
                 for (String name : testNames) {
-
                     blamer.setCulprit(name, userToBlame);
 					User current=User.current();
 					if(current!=null && userToBlame.getId().equals(current.getId())){
@@ -62,9 +61,11 @@ public class BlameAction extends TestAction {
                 }
             }
         } else {
-            for (String name : testNames) {
-                blamer.setCulprit(name, null);
-            }
+			if(testNames!=null){
+				for (String name : testNames) {
+					blamer.setCulprit(name, null);
+				}
+			}
         }
 		response.setContentType("application/json");
         writeBulkCulpritStatusToStream(response.getOutputStream(), testNames);
@@ -75,7 +76,7 @@ public class BlameAction extends TestAction {
 		String[] testNames = request.getParameterValues("testNames");
 		if (userID != null && !userID.equals("{null}")) {
 			User userToBlame = User.get(userID, false);
-			if (User.getAll().contains(userToBlame)) {
+			if (testNames!=null && User.getAll().contains(userToBlame)) {
 				for (String name : testNames) {
 					User current=User.current();
 					if(current!=null && userToBlame.getId().equals(current.getId())){
@@ -84,8 +85,10 @@ public class BlameAction extends TestAction {
 				}
 			}
 		} else {
-			for (String name : testNames) {
-				blamer.setCulprit(name, null);
+			if(testNames!=null){
+				for (String name : testNames) {
+					blamer.setCulprit(name, null);
+				}
 			}
 		}
 		response.setContentType("application/json");
@@ -108,9 +111,10 @@ public class BlameAction extends TestAction {
 	public void doBulkStatus(StaplerRequest request, StaplerResponse response) throws IOException {
 		String[] testNames=request.getParameterValues("testNames");
 		String statusValue=request.getParameter("status");
-
-		for (String name : testNames) {
-			blamer.setStatus(name, Status.valueOf(statusValue));
+		if(testNames!=null){
+			for (String name : testNames) {
+				blamer.setStatus(name, Status.valueOf(statusValue));
+			}
 		}
 		response.setContentType("application/json");
 		writeBulkCulpritStatusToStream(response.getOutputStream(), testNames);
@@ -118,14 +122,16 @@ public class BlameAction extends TestAction {
 
     private void writeBulkCulpritStatusToStream(ServletOutputStream outputStream, String[] testNames) throws IOException {
         JSONObject jsonObject = new JSONObject();
-        for (String name : testNames) {
-            Map<String, String> testData = new HashMap<String, String>();
-            User culprit = getCulprit(name);
-            testData.put("culprit", culprit == null ? "null" : culprit.getId());
-            testData.put("status", getStatus(name).name());
-            testData.put("isYou", String.valueOf((culprit != null && culprit.equals(User.current()))));
-            jsonObject.put(name, testData);
-        }
+		if(testNames!=null){
+			for (String name : testNames) {
+				Map<String, String> testData = new HashMap<String, String>();
+				User culprit = getCulprit(name);
+				testData.put("culprit", culprit == null ? "null" : culprit.getId());
+				testData.put("status", getStatus(name).name());
+				testData.put("isYou", String.valueOf((culprit != null && culprit.equals(User.current()))));
+				jsonObject.put(name, testData);
+			}
+		}
         outputStream.print(jsonObject.toString());
         outputStream.flush();
         outputStream.close();

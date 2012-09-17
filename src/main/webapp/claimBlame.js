@@ -20,6 +20,7 @@ if (!window.claim) {
                     var resultJson = eval('(' + transport.responseText + ')');
                     badges.each(function (it) {
 						var checkbox=it.down('.bulkAssign');
+						debugger;
 						if (checkbox.checked) {
                             var testNameAttr = it.getAttribute("testName");
                             var testJson=resultJson[testNameAttr];
@@ -84,8 +85,9 @@ if (!window.changeUserPageStatus) {
 }
 
 function reloadStatusSpan(statusSpan, newStatus, isCulprit) {
-    statusSpan.setAttribute('class', "status " + newStatus + (isCulprit ? " isCulprit" : ""));
-    statusSpan.down('span').innerText = newStatus;
+    statusSpan.setAttribute('class', "status " + newStatus + (isCulprit=='true' ? " isCulprit" : ""));
+	var status = statusSpan.down('span');
+	status.innerText = newStatus;
 
     var button = statusSpan.down('input');
     if (newStatus == 'NotAccepted') {
@@ -95,6 +97,10 @@ function reloadStatusSpan(statusSpan, newStatus, isCulprit) {
         button.value = 'Done';
         button.name = 'Done';
     }
+//	else if(newStatus == 'Unassigned'){
+//		button.style.display='none';
+//		status.style.display='block';
+//	}
 }
 
 if (!window.userBulkStatus) {
@@ -121,7 +127,6 @@ if (!window.userBulkStatus) {
 				parameters:{status:status,testNames:testNames},
 				onSuccess:function (transport) {
 					var resultJson = eval('(' + transport.responseText + ')');
-					debugger;
 					for (var i = 0; i < elementsByClassName.length; i++) {
 						var element = elementsByClassName[i];
 						var testName=element.getAttribute("testName");
