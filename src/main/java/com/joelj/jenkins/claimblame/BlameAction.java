@@ -1,12 +1,22 @@
 package com.joelj.jenkins.claimblame;
 
-import hudson.model.Hudson;
-import hudson.model.User;
+import hudson.model.*;
+import hudson.tasks.Mailer;
+import hudson.tasks.junit.CaseResult;
 import hudson.tasks.junit.TestAction;
+import hudson.tasks.junit.TestResultAction;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
+import javax.mail.Address;
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.Transport;
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import java.io.IOException;
@@ -21,15 +31,17 @@ public class BlameAction extends TestAction {
 	private final String testName;
 	private final Blamer blamer;
 	private final String testUrl;
+	private final String buildId;
 
 	@SuppressWarnings("deprecation")
-	public BlameAction(String testName, Blamer blamer, String testUrl) {
+	public BlameAction(String buildId,String testName, Blamer blamer, String testUrl) {
 		this.testName = testName;
 		this.blamer = blamer;
 		this.testUrl = testUrl;
+		this.buildId=buildId;
 	}
 
-    public void doBlame(StaplerRequest request, StaplerResponse response) throws IOException, ServletException {
+    public void doBlame(StaplerRequest request, StaplerResponse response) throws IOException, ServletException, MessagingException {
         String userID = request.getParameter("userID");
         if (userID != null && !userID.equals("{null}")) {
             User userToBlame = User.get(userID, false); //User.get returns a dummy object if it doesn't exist
@@ -38,6 +50,8 @@ public class BlameAction extends TestAction {
 				User current=User.current();
 				if(current!=null && userToBlame.getId().equals(current.getId())){
 					blamer.setStatus(testName,Status.Accepted);
+				} else if(current!=null && !userToBlame.getId().equals(current.getId())){
+					mailFailures(userToBlame,Arrays.asList(testName));
 				}
             }
         } else {
@@ -46,7 +60,7 @@ public class BlameAction extends TestAction {
         writeCulpritStatusToStream(response.getOutputStream());
     }
 
-    public void doBulkBlame(StaplerRequest request, StaplerResponse response) throws IOException {
+    public void doBulkBlame(StaplerRequest request, StaplerResponse response) throws IOException, MessagingException {
         String userID = request.getParameter("userID");
         String[] testNames = request.getParameterValues("testNames");
         if (userID != null && !userID.equals("{null}")) {
@@ -58,7 +72,9 @@ public class BlameAction extends TestAction {
 					if(current!=null && userToBlame.getId().equals(current.getId())){
 						blamer.setStatus(name,Status.Accepted);
 					}
+
                 }
+				mailFailures(userToBlame,Arrays.asList(testNames));
             }
         } else {
 			if(testNames!=null){
@@ -70,6 +86,82 @@ public class BlameAction extends TestAction {
 		response.setContentType("application/json");
         writeBulkCulpritStatusToStream(response.getOutputStream(), testNames);
     }
+
+	private void mailFailures(User userToBlame, List<String> testNames) throws MessagingException {
+		User currentUser = User.current();
+		if(userToBlame==null || (currentUser !=null && userToBlame.getId().equals(currentUser.getId()))){
+			return;
+		}
+
+		ArrayList<String> testsToMail = getTestsToMail(userToBlame, testNames);
+
+		Mailer.UserProperty userToBlameProperty = userToBlame.getProperty(Mailer.UserProperty.class);
+		if(userToBlameProperty == null) {
+			return;
+		}
+
+		String email = userToBlameProperty.getAddress();
+		if(email == null || email.isEmpty()) {
+			return; //no one to email!
+		}
+
+		if(testsToMail.size()>0){
+			Run<?, ?> build = getBuild();
+			MimeMessage msg=new MimeMessage(Mailer.descriptor().createSession());
+			if(currentUser!=null){
+				Mailer.UserProperty userProperty = currentUser.getProperty(Mailer.UserProperty.class);
+				if(userProperty != null) {
+					InternetAddress emailAddress = new InternetAddress(userProperty.getAddress());
+					msg.setReplyTo(new Address[]{emailAddress});
+				}
+			}
+			msg.setFrom(new InternetAddress(Mailer.descriptor().getAdminAddress()));
+			StringBuilder urlBuilder = new StringBuilder();
+			urlBuilder.append(Jenkins.getInstance().getRootUrl());
+			urlBuilder.append(build.getUrl());
+			String url=urlBuilder.toString();
+			msg.setSentDate(new Date());
+			msg.setRecipient(Message.RecipientType.TO, new InternetAddress(email));
+			msg.setSubject("Build " + build.getId() + ":Pending Failure Acceptance");
+			StringBuilder messageBuilder=new StringBuilder();
+			messageBuilder.append("You've been assigned to the following Failures on <a href=\"")
+					.append(url)
+					.append("\">Build ")
+					.append(buildId)
+					.append("</a>");
+			for (String test : testsToMail) {
+				messageBuilder.append("<br/>")
+						.append(test);
+			}
+			messageBuilder.append("<br/>");
+			messageBuilder.append("To View your assigned tests, look at your <a href=\"")
+					.append(Jenkins.getInstance().getRootUrl())
+					.append("user/")
+					.append(userToBlame.getId())
+					.append("/\">User Page!</a>");
+			msg.setContent(messageBuilder.toString(), "text/html");
+			Transport.send(msg);
+		}
+	}
+
+	private ArrayList<String> getTestsToMail(User userToBlame, List<String> testNames) {
+		ArrayList<String> testsToMail = new ArrayList<String>();
+		if(userToBlame!=null && testNames!=null){
+			Run<?, ?> build = getBuild();
+			if(build!=null){
+				TestResultAction action = build.getAction(TestResultAction.class);
+				if(action!=null){
+					List<CaseResult> failedTests = action.getFailedTests();
+					for (CaseResult failedTest : failedTests) {
+						if(testNames.contains(failedTest.getFullName())){
+							testsToMail.add(failedTest.getFullName());
+						}
+					}
+				}
+			}
+		}
+		return testsToMail;
+	}
 
 	public void doBulkDone(StaplerRequest request, StaplerResponse response) throws IOException {
 		String userID = request.getParameter("userID");
@@ -94,7 +186,6 @@ public class BlameAction extends TestAction {
 		response.setContentType("application/json");
 		writeBulkCulpritStatusToStream(response.getOutputStream(), testNames);
 	}
-
 
     public void doStatus(StaplerRequest request, StaplerResponse response) throws IOException, ServletException {
         String statusString = request.getParameter("status");
@@ -181,6 +272,10 @@ public class BlameAction extends TestAction {
     public String getTestUrl() {
         return testUrl;
     }
+
+	public Run<?, ?> getBuild(){
+		return buildId!=null ? Build.fromExternalizableId(buildId): null;
+	}
 
     public String getIconFileName() {
         return null;

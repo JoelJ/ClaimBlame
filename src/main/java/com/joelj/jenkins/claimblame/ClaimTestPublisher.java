@@ -34,7 +34,7 @@ public class ClaimTestPublisher extends TestDataPublisher {
 				Blamer blamer = BlamerFactory.getBlamerForJob(build.getProject());
 				ImmutableList.Builder<TestAction> builder = ImmutableList.builder();
 				if(testObject instanceof CaseResult) {
-					builder.add(new BlameAction(((CaseResult) testObject).getFullName(), blamer, build.getUrl() + "testReport" + testObject.getUrl()));
+					builder.add(new BlameAction(build.getExternalizableId(),((CaseResult) testObject).getFullName(), blamer, build.getUrl() + "testReport" + testObject.getUrl()));
 				}
 				return builder.build();
 			}
