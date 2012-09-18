@@ -50,6 +50,7 @@ public class BlameAction extends TestAction {
 				User current=User.current();
 				if(current!=null && userToBlame.getId().equals(current.getId())){
 					blamer.setStatus(testName,Status.Accepted);
+					mailCommitters(current,testName);
 				} else if(current!=null && !userToBlame.getId().equals(current.getId())){
 					mailFailures(userToBlame,Arrays.asList(testName));
 				}
@@ -60,7 +61,64 @@ public class BlameAction extends TestAction {
         writeCulpritStatusToStream(response.getOutputStream());
     }
 
-    public void doBulkBlame(StaplerRequest request, StaplerResponse response) throws IOException, MessagingException {
+	private void mailCommitters(User current, String... testNames) throws MessagingException {
+		//TODO mail all the committers of this build, User current has accepted the following tests
+		//find committers of a build
+		//mail each of them.
+
+		Run<?, ?> build = getBuild();
+		if(build!=null){
+			Set<String> committers = ClaimTestPublisher.findCommitters((AbstractBuild) build);
+			if(committers.size()>0){
+				for (String committerID : committers) {
+					User user = User.get(committerID);
+					if(User.getAll().contains(user)){
+						Mailer.UserProperty userProperty = user.getProperty(Mailer.UserProperty.class);
+						if(userProperty==null){
+							continue;
+						}
+						String email = userProperty.getAddress();
+						if(email==null || email.isEmpty()){
+							continue;
+						}
+						MimeMessage msg=new MimeMessage(Mailer.descriptor().createSession());
+						if(current!=null){
+							Mailer.UserProperty currentUserProperty = current.getProperty(Mailer.UserProperty.class);
+							if(currentUserProperty != null) {
+								InternetAddress emailAddress = new InternetAddress(userProperty.getAddress());
+								msg.setReplyTo(new Address[]{emailAddress});
+							}
+						}
+						msg.setFrom(new InternetAddress(Mailer.descriptor().getAdminAddress()));
+						StringBuilder urlBuilder=new StringBuilder();
+						urlBuilder.append(Jenkins.getInstance().getRootUrl()).append(build.getUrl());
+						String url=urlBuilder.toString();
+						msg.setSentDate(new Date());
+						msg.setRecipient(Message.RecipientType.TO, new InternetAddress(email));
+						msg.setSubject("Build "+ buildId +":Accepted Failures");
+						StringBuilder messageBuilder=new StringBuilder();
+						assert current != null;
+						messageBuilder.append("User ")
+								.append(current.getFullName())
+								.append(" has accepted the following tests of your <a href=\"")
+										.append(url)
+										.append("\">Build ")
+										.append(buildId)
+										.append("</a>");
+						for (String name : testNames) {
+							messageBuilder.append("<br/>")
+									.append(name);
+						}
+						msg.setContent(messageBuilder.toString(),"text/html");
+						Transport.send(msg);
+					}
+				}
+			}
+		}
+	}
+
+	public void doBulkBlame(StaplerRequest request, StaplerResponse response) throws IOException, MessagingException {
+		boolean doMailCommitters=false;
         String userID = request.getParameter("userID");
         String[] testNames = request.getParameterValues("testNames");
         if (userID != null && !userID.equals("{null}")) {
@@ -71,9 +129,13 @@ public class BlameAction extends TestAction {
 					User current=User.current();
 					if(current!=null && userToBlame.getId().equals(current.getId())){
 						blamer.setStatus(name,Status.Accepted);
+						doMailCommitters=true;
 					}
 
                 }
+				if(doMailCommitters){
+					mailCommitters(User.current(), testNames);
+				}
 				mailFailures(userToBlame,Arrays.asList(testNames));
             }
         } else {
