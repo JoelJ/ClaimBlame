@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.*;
+import hudson.scm.ChangeLogSet;
 import hudson.tasks.junit.*;
 import hudson.tasks.junit.TestObject;
 import hudson.tasks.junit.TestResult;
@@ -43,7 +44,7 @@ public class ClaimTestPublisher extends TestDataPublisher {
 	private void resolveTests(AbstractBuild<?, ?> build, Collection<SuiteResult> suites) {
 		Blamer blamer = BlamerFactory.getBlamerForJob(build.getProject());
 
-		User culprit = getRandomCulprit(build);
+		User culprit = getSingleCulprit(build);
 
 		for (SuiteResult suite : suites) {
 			for (CaseResult caseResult : suite.getCases()) {
@@ -57,14 +58,41 @@ public class ClaimTestPublisher extends TestDataPublisher {
 		}
 	}
 
-	private User getRandomCulprit(AbstractBuild<?, ?> build) {
+	private User getSingleCulprit(AbstractBuild<?, ?> build) {
 		User culprit = null;
-		List<User> culprits = new ArrayList<User>(build.getCulprits());
-		if(culprits.size() > 0) {
-			int random = new Random().nextInt(culprits.size());
-			culprit = culprits.get(random);
+		Set<String> committers = findCommitters(build);
+		if(committers.size()==1){
+			User user = User.get(committers.iterator().next());
+			culprit= user;
 		}
 		return culprit;
+	}
+
+	public static Set<String> findCommitters(AbstractBuild build) {
+		AbstractBuild theBuild=build;
+		Set<String> result=new HashSet<String>();
+		while(theBuild!=null){
+			for (Object changeObj : build.getChangeSet()) {
+				ChangeLogSet.Entry change = (ChangeLogSet.Entry)changeObj;
+				User culprit = change.getAuthor();
+				if(User.getAll().contains(culprit)){
+					result.add(culprit.getId());
+				}
+			}
+			theBuild= (AbstractBuild) getUpstreamProject(theBuild);
+		}
+		return Collections.unmodifiableSet(result);
+	}
+
+	private static Run getUpstreamProject(Run build){
+		Cause.UpstreamCause cause = (Cause.UpstreamCause) build.getCause(Cause.UpstreamCause.class);
+		if(cause != null) {
+			String upstreamProject = cause.getUpstreamProject();
+			int upstreamBuildNumber = cause.getUpstreamBuild();
+			Project project = (Project) Project.findNearest(upstreamProject);
+			return project.getBuildByNumber(upstreamBuildNumber);
+		}
+		return null;
 	}
 
 	@Extension
