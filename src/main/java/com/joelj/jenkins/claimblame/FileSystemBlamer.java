@@ -60,7 +60,8 @@ public class FileSystemBlamer implements Blamer, Saveable {
 		}
 	}
 
-    public Set<String> getTests() {
+    @Override
+	public Set<String> getTests() {
         return getCulprits().keySet();
     }
 

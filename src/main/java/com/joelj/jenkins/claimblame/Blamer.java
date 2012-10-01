@@ -4,6 +4,7 @@ import hudson.model.Saveable;
 import hudson.model.User;
 
 import java.io.IOException;
+import java.util.Set;
 
 /**
  * User: joeljohnson
@@ -19,4 +20,6 @@ public interface Blamer {
 
 	void save() throws IOException;
 	void load();
+
+	Set<String> getTests();
 }
