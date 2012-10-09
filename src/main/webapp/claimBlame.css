@@ -1,5 +1,31 @@
 td.pane {
-    white-space: normal;
+    border: 1px #BBB solid;
+    padding: 3px 4px 3px 4px;
+    vertical-align: middle;
+}
+
+td.pane-header {
+    border: 1px #BBB solid;
+    border-right: none;
+    border-left: none;
+    background-color: #F0F0F0;
+    font-weight: bold;
+}
+
+.pane td {
+    padding: 4px 4px 3px 4px;
+}
+
+table.pane {
+    border-collapse: collapse;
+}
+
+table {
+    border: 1px #BBB solid;
+    border-collapse:collapse;
+    font-family:Verdana, Helvetica, sans serif;
+    font-size:11px;
+    width:100%;
 }
 
 #BlameActionBadge {

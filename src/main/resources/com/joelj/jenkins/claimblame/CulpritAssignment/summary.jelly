@@ -7,34 +7,33 @@
 
     <j:set var="assignments" value="${it.findAssignments()}"/>
     <j:if test="${!assignmentValues.isEmpty()}">
-        <table cellpadding="3">
+        <table>
             <tr>
-                <th>Test</th>
-                <th>Status</th>
+                <td class="pane-header">Test</td>
+                <td class="pane-header" style="width:4em">Status</td>
             </tr>
-            <j:set var="rootURL" value="http://10.141.1.30:8080"/>
             <j:set var="assignmentValues" value="${assignments.values()}"/>
 
             <j:forEach var="assignment" items="${assignmentValues}">
                 <j:if test="${assignment.testStatus !='Fixed'}">
                     <tr>
-                        <td>
+                        <td class="pane">
                             <a class="${assignment.testName}" href="${rootURL}/${assignment.testUrl}">${assignment.testName}</a>
-							<!--TODO this is bad, figure out how to get the url from javascript more gracefully -->
-							<input id="testUrl" type="hidden" value="${rootURL}/${assignment.testUrl}"/>
+                            <input id="testUrl" type="hidden" value="${rootURL}/${assignment.testUrl}"/>
                         </td>
-                        <td>
+                        <td class="pane">
                             <j:set value="${it.getStatusValues()}" var="statusValues"/>
                             <select class="status" testName="${assignment.testName}" name="status"
-                                    onchange="changeUserPageStatus('${rootURL}/${assignment.testUrl}',this)">
+                                    url="${rootURL}/${assignment.testUrl}" >
                                 <j:forEach items="${statusValues}" var="statusVal">
-                                    <j:if test="${statusVal == assignment.testStatus}">
-                                        <option value="${statusVal}" selected="true">${statusVal}</option>
-                                    </j:if>
-                                    <!--else-->
-                                    <j:if test="${statusVal != assignment.testStatus}">
-                                        <option value="${statusVal}">${statusVal}</option>
-                                    </j:if>
+                                    <j:choose>
+                                        <j:when test="${statusVal == assignment.testStatus}">
+                                            <option value="${statusVal}" selected="true">${statusVal}</option>
+                                        </j:when>
+                                        <j:otherwise>
+                                            <option value="${statusVal}">${statusVal}</option>
+                                        </j:otherwise>
+                                    </j:choose>
                                 </j:forEach>
                             </select>
                         </td>
@@ -42,7 +41,7 @@
                 </j:if>
             </j:forEach>
         </table>
-        <input type="button" onclick="userBulkStatus('Accepted')" value="Accept All Assigned to Me!"/>
-        <input type="button" onclick="userBulkStatus('Done')" value="Done with All Accepted!"/>
+        <input type="button" onclick="userBulkStatus('Accepted')" value="Accept All Assigned to Me"/>
+        <input type="button" onclick="userBulkStatus('Done')" value="Done with All Accepted"/>
     </j:if>
 </j:jelly>

@@ -17,24 +17,27 @@
         <select name="culprit" onchange="claim('${it.url}', this)">
             <option value="{null}">-- Unassigned --</option>
             <j:forEach items="${it.users}" var="user">
-                <j:if test="${culprit != null and user.id == culprit.id}">
-                    <option value="${user.id}" selected="true">${user.displayName}</option>
-                </j:if>
-                <!--else-->
-                <j:if test="${!(culprit != null and user.id == culprit.id)}">
-                    <option value="${user.id}">${user.displayName}</option>
-                </j:if>
+                <j:choose>
+                    <j:when test="${culprit != null and user.id == culprit.id}">
+                        <option value="${user.id}" selected="true">${user.displayName}</option>
+                    </j:when>
+                    <j:otherwise>
+                        <option value="${user.id}">${user.displayName}</option>
+                    </j:otherwise>
+                </j:choose>
             </j:forEach>
         </select>
 
         <span class="status ${status} ${(culprit != null and it.currentUser.id == culprit.id ? 'isCulprit' : '')}">
-            <j:if test="${status != 'Accepted'}">
-                <input type="button" name="Accepted" value="Accept" onclick="changeStatus('${it.url}', this)"/>
-            </j:if>
-            <j:if test="${status == 'Accepted'}">
-                <input type="button" name="Done" value="Done" onclick="changeStatus('${it.url}', this)"/>
-            </j:if>
+            <j:choose>
+                <j:when test="${status != 'Accepted'}">
+                    <input type="button" name="Accepted" value="Accept" onclick="changeStatus('${it.url}', this)"/>
+                </j:when>
+                <j:otherwise>
 
+                    <input type="button" name="Done" value="Done" onclick="changeStatus('${it.url}', this)"/>
+                </j:otherwise>
+            </j:choose>
             <span>${status}</span>
         </span>
     </span>

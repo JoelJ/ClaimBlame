@@ -20,7 +20,6 @@ if (!window.claim) {
                     var resultJson = eval('(' + transport.responseText + ')');
                     badges.each(function (it) {
 						var checkbox=it.down('.bulkAssign');
-						debugger;
 						if (checkbox.checked) {
                             var testNameAttr = it.getAttribute("testName");
                             var testJson=resultJson[testNameAttr];
@@ -53,7 +52,7 @@ if (!window.claim) {
     };
 }
 
-if (!window.changeStatus) {
+if(!window.initializedClaimBlame) {
     window.changeStatus = function (url, button) {
         new Ajax.Request(url + '/blame/status', {
             method:'post',
@@ -64,14 +63,17 @@ if (!window.changeStatus) {
                 reloadStatusSpan(statusSpan, resultJson.status, resultJson.isYou)
             },
             onFailure:function () {
+                console.log(url);
+                console.log(button);
+                console.log(this);
                 console.log('Change status went wrong...');
             }
         });
-    }
-}
+    };
 
-if (!window.changeUserPageStatus) {
-    window.changeUserPageStatus = function (url, select) {
+    window.changeUserPageStatus = function (event) {
+        var select = $(event.target);
+        var url = select.getAttribute('url');
         new Ajax.Request(url + '/blame/status', {
             method:'post',
             parameters:{status:select.value},
@@ -81,7 +83,15 @@ if (!window.changeUserPageStatus) {
                 console.log('Change User status went wrong...');
             }
         });
-    }
+    };
+
+    Event.observe(window, 'load', function(event) {
+       $$('select[url]').each(function(it) {
+           it.observe('change',changeUserPageStatus);
+       });
+    });
+
+    window.initializedClaimBlame = true;
 }
 
 function reloadStatusSpan(statusSpan, newStatus, isCulprit) {
@@ -96,6 +106,11 @@ function reloadStatusSpan(statusSpan, newStatus, isCulprit) {
     } else if (newStatus == 'Accepted') {
         button.value = 'Done';
         button.name = 'Done';
+        button.style.display='block';
+        status.style.display='none';
+    } else if (newStatus == 'Done') {
+        button.style.display='none';
+        status.style.display='block';
     }
 //	else if(newStatus == 'Unassigned'){
 //		button.style.display='none';
@@ -269,39 +284,42 @@ acceptWithAge=function(){
 };
 
 Event.observe(window,"load",function(){
-	if(document.getElementsByClassName("claimActions").length<1){
-		var user=document.getElementById("userName").value;
-		if(user !=""){
-			var claimActionsDiv = document.createElement('div');
-			claimActionsDiv.className="claimActions";
-			var acceptAllInput=document.createElement('input');
-			acceptAllInput.type="button";
-			acceptAllInput.value="Accept All Assigned to Me";
-			acceptAllInput.onclick=acceptAll;
+    var userName = document.getElementById("userName");
+    if(userName != null) {
+        if(document.getElementsByClassName("claimActions").length<1){
+            var user=userName.value;
+            if(user !=""){
+                var claimActionsDiv = document.createElement('div');
+                claimActionsDiv.className="claimActions";
+                var acceptAllInput=document.createElement('input');
+                acceptAllInput.type="button";
+                acceptAllInput.value="Accept All Assigned to Me";
+                acceptAllInput.onclick=acceptAll;
 
-			var acceptAllWithAgeInput=document.createElement('input');
-			acceptAllWithAgeInput.type="button";
-			acceptAllWithAgeInput.value="Accept All with Age";
-			acceptAllWithAgeInput.onclick=acceptWithAge;
-			var acceptAllWithAgeInputTextEntry=document.createElement('input');
-			acceptAllWithAgeInputTextEntry.id="ageField";
-			acceptAllWithAgeInputTextEntry.type="text";
-			acceptAllWithAgeInputTextEntry.value="1";
-			acceptAllWithAgeInputTextEntry.title="Accept tests with age \"x\"";
+                var acceptAllWithAgeInput=document.createElement('input');
+                acceptAllWithAgeInput.type="button";
+                acceptAllWithAgeInput.value="Accept All with Age";
+                acceptAllWithAgeInput.onclick=acceptWithAge;
+                var acceptAllWithAgeInputTextEntry=document.createElement('input');
+                acceptAllWithAgeInputTextEntry.id="ageField";
+                acceptAllWithAgeInputTextEntry.type="text";
+                acceptAllWithAgeInputTextEntry.value="1";
+                acceptAllWithAgeInputTextEntry.title="Accept tests with age \"x\"";
 
-			var doneAllInput=document.createElement('input');
-			doneAllInput.type="button";
-			doneAllInput.value="Done with All";
-			doneAllInput.onclick=doneAll;
+                var doneAllInput=document.createElement('input');
+                doneAllInput.type="button";
+                doneAllInput.value="Done with All";
+                doneAllInput.onclick=doneAll;
 
-			claimActionsDiv.appendChild(doneAllInput);
-			claimActionsDiv.appendChild(acceptAllInput);
-			claimActionsDiv.appendChild(acceptAllWithAgeInput);
-			claimActionsDiv.appendChild(acceptAllWithAgeInputTextEntry);
+                claimActionsDiv.appendChild(doneAllInput);
+                claimActionsDiv.appendChild(acceptAllInput);
+                claimActionsDiv.appendChild(acceptAllWithAgeInput);
+                claimActionsDiv.appendChild(acceptAllWithAgeInputTextEntry);
 
-			var mainPanel=$('main-panel');
-			var targetElement=$$('#main-panel h2')[0];
-			mainPanel.insertBefore(claimActionsDiv,targetElement);
-		}
-	}
+                var mainPanel=$('main-panel');
+                var targetElement=$$('#main-panel h2')[0];
+                mainPanel.insertBefore(claimActionsDiv,targetElement);
+            }
+        }
+    }
 });
