@@ -322,4 +322,47 @@ Event.observe(window,"load",function(){
             }
         }
     }
+
+	// -- Generate IntelliJ run config pattern based on selected rows -- //
+	if(document.getElementsBySelector(".intellijPattern").length === 0) {
+	console.info("here");
+	var pattern = document.createElement("div");
+	pattern.setAttribute("class", "intellijPattern");
+	pattern.style.float = "right";
+	pattern.style.display = "none";
+	var label = document.createElement("label");
+	label.innerHTML = "IntelliJ RunConfig Pattern";
+	pattern.appendChild(label);
+
+	var patternTextBox = document.createElement("input");
+
+	patternTextBox.type = "text";
+	pattern.appendChild(patternTextBox);
+
+	document.getElementsBySelector(".claimActions")[0].appendChild(pattern);
+
+	var tests = document.getElementsBySelector("input[type='checkbox'][testname]");
+
+	for(var i = 0; i < tests.length; i++) {
+		tests[i].addEventListener('click', updateIntelliJPattern);
+	}
+
+	function updateIntelliJPattern() {
+		console.info("here");
+		var runConfigPattern = "";
+		var selectedTests = document.getElementsBySelector("input[type='checkbox']:checked[testname]");
+		for(var i = 0; i < selectedTests.length; i++) {
+			runConfigPattern += selectedTests[i].getAttribute("testname").replace(/\.(\w+$)/, ",$1");
+			if(i < selectedTests.length - 1) {
+				runConfigPattern += "||";
+			}
+		}
+		if(runConfigPattern.length === 0) {
+			pattern.style.display = "none"; 
+		} else {
+			pattern.style.display = "block";
+		}
+		patternTextBox.setAttribute("value", runConfigPattern);
+	}
+	}
 });
