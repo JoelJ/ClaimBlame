@@ -94,7 +94,7 @@ public class ClaimTestPublisher extends TestDataPublisher {
 		if(cause != null) {
 			String upstreamProject = cause.getUpstreamProject();
 			int upstreamBuildNumber = cause.getUpstreamBuild();
-			Project project = (Project) Project.findNearest(upstreamProject);
+			AbstractProject project = Project.findNearest(upstreamProject);
 			return project.getBuildByNumber(upstreamBuildNumber);
 		}
 		return null;
