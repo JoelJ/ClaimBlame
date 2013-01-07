@@ -33,7 +33,7 @@ public class ClaimTestPublisher extends TestDataPublisher {
 			public List<? extends TestAction> getTestAction(TestObject testObject) {
 				Blamer blamer = BlamerFactory.getBlamerForJob(build.getProject());
 				ImmutableList.Builder<TestAction> builder = ImmutableList.builder();
-				if(testObject instanceof CaseResult) {
+				if (testObject instanceof CaseResult) {
 					String rootUrl = Hudson.getInstance().getRootUrl();
 					if (rootUrl == null) {
 						rootUrl = "/";
@@ -53,9 +53,9 @@ public class ClaimTestPublisher extends TestDataPublisher {
 
 		for (SuiteResult suite : suites) {
 			for (CaseResult caseResult : suite.getCases()) {
-				if(caseResult.isPassed()) {
+				if (caseResult.isPassed()) {
 					blamer.setStatus(caseResult.getFullName(), Status.Fixed);
-				} else if(caseResult.getAge() == 1) {
+				} else if (caseResult.getAge() == 1) {
 					//if culprit is null, it will remove any assignment
 					blamer.setCulprit(caseResult.getFullName(), culprit);
 				}
@@ -66,32 +66,32 @@ public class ClaimTestPublisher extends TestDataPublisher {
 	private User getSingleCulprit(AbstractBuild<?, ?> build) {
 		User culprit = null;
 		Set<String> committers = findCommitters(build);
-		if(committers.size()==1){
+		if (committers.size() == 1) {
 			User user = User.get(committers.iterator().next());
-			culprit= user;
+			culprit = user;
 		}
 		return culprit;
 	}
 
 	public static Set<String> findCommitters(AbstractBuild build) {
-		AbstractBuild theBuild=build;
-		Set<String> result=new HashSet<String>();
-		while(theBuild!=null){
+		AbstractBuild theBuild = build;
+		Set<String> result = new HashSet<String>();
+		while (theBuild != null) {
 			for (Object changeObj : build.getChangeSet()) {
-				ChangeLogSet.Entry change = (ChangeLogSet.Entry)changeObj;
+				ChangeLogSet.Entry change = (ChangeLogSet.Entry) changeObj;
 				User culprit = change.getAuthor();
-				if(User.getAll().contains(culprit)){
+				if (User.getAll().contains(culprit)) {
 					result.add(culprit.getId());
 				}
 			}
-			theBuild= (AbstractBuild) getUpstreamProject(theBuild);
+			theBuild = (AbstractBuild) getUpstreamProject(theBuild);
 		}
 		return Collections.unmodifiableSet(result);
 	}
 
-	private static Run getUpstreamProject(Run build){
+	private static Run getUpstreamProject(Run build) {
 		Cause.UpstreamCause cause = (Cause.UpstreamCause) build.getCause(Cause.UpstreamCause.class);
-		if(cause != null) {
+		if (cause != null) {
 			String upstreamProject = cause.getUpstreamProject();
 			int upstreamBuildNumber = cause.getUpstreamBuild();
 			AbstractProject project = Project.findNearest(upstreamProject);
