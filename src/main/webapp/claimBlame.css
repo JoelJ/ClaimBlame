@@ -1,10 +1,10 @@
-td.pane {
+#CulpritAssignment td.pane {
     border: 1px #BBB solid;
     padding: 3px 4px 3px 4px;
     vertical-align: middle;
 }
 
-td.pane-header {
+#CulpritAssignment td.pane-header {
     border: 1px #BBB solid;
     border-right: none;
     border-left: none;
@@ -12,15 +12,15 @@ td.pane-header {
     font-weight: bold;
 }
 
-.pane td {
+#CulpritAssignment .pane td {
     padding: 4px 4px 3px 4px;
 }
 
-table.pane {
+table#CulpritAssignment.pane {
     border-collapse: collapse;
 }
 
-table {
+table#CulpritAssignment {
     border: 1px #BBB solid;
     border-collapse:collapse;
     font-family:Verdana, Helvetica, sans serif;

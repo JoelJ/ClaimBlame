@@ -7,7 +7,7 @@
 
     <j:set var="assignments" value="${it.findAssignments()}"/>
     <j:if test="${!assignmentValues.isEmpty()}">
-        <table>
+        <table id="CulpritAssignment">
             <tr>
                 <td class="pane-header">Test</td>
                 <td class="pane-header" style="width:4em">Status</td>
