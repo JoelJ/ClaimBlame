@@ -1,0 +1,28 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+	<div class="ClaimBlameCell">
+		<select>
+			<option value="{null}">-- Unassigned --</option>
+			<j:forEach var="user" items="${it.users}">
+				<j:choose>
+					<j:when test="${it.culprit != null and user.id == it.culprit.id}">
+						<option value="${user.id}" selected="true">${user.displayName}</option>
+					</j:when>
+					<j:otherwise>
+						<option value="${user.id}">${user.displayName}</option>
+					</j:otherwise>
+				</j:choose>
+			</j:forEach>
+		</select>
+		<span class="status ${it.status}">
+			<j:choose>
+				<j:when test="${status != 'Accepted'}">
+					<input type="button" name="Accepted" value="Accept"/>
+				</j:when>
+				<j:otherwise>
+					<input type="button" name="Done" value="Done"/>
+				</j:otherwise>
+			</j:choose>
+			<span>${status}</span>
+		</span>
+	</div>
+</j:jelly>
