@@ -9,3 +9,5 @@ Those assignments persist as long as that test is failing.
 
 So I can assign myself *failing.Test* on *build 1*,
 and still see that I'm working on fixing that test on *build 5* if it's still failing.
+
+The plugin will also email others that they have been assigned to a test failure.
