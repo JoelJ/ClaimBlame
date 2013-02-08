@@ -3,7 +3,6 @@ AtTaskClaimBlame = {
 		AtTaskClaimBlame.rootUrl = rootUrl;
 		AtTaskClaimBlame.projectId = projectId;
 		AtTaskClaimBlame.currentUserId = currentUserId;
-		debugger
 		AtTaskClaimBlame.isUpdating = false; //Used to determine if the change/click events should fire
 
 		$$('.ClaimBlameCell .status input[type=button]').each(function(it) {
