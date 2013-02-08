@@ -1,5 +1,5 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-	<div class="ClaimBlameCell" name="${it.testName}">
+	<div class="ClaimBlameCell ${it.culprit == it.currentUser ? 'sameUser' : ''}" name="${it.testName}">
 		<input type="checkbox" class="bulkSelect"/>
 		<select>
 			<option value="{null}">-- Unassigned --</option>

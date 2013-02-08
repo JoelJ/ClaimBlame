@@ -1,0 +1,23 @@
+.ClaimBlameCell .status input {
+	display: none;
+}
+.ClaimBlameCell .status span {
+	display: inline;
+}
+
+.ClaimBlameCell.sameUser .status input {
+	display: inline-block;
+}
+.ClaimBlameCell.sameUser .status span {
+	display: none;
+}
+
+.ClaimBlameCell .status.Fixed input,
+.ClaimBlameCell .status.Done input {
+	display: none;
+}
+
+.ClaimBlameCell .status.Fixed input,
+.ClaimBlameCell .status.Done span {
+	display: inline;
+}

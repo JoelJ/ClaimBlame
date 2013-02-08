@@ -13,71 +13,85 @@ AtTaskClaimBlame = {
 	},
 
 	onAcceptDoneButtonClicked: function(e) {
-		debugger;
 		var button = e.target;
 		button.setAttribute('disabled', true);
-		var cell = button.up('.ClaimBlameCell');
-		var testName = cell.getAttribute('name');
+
+		var parameters = {
+			testNames: [],
+			status: button.getAttribute('name'),
+			projectId: AtTaskClaimBlame.projectId
+		};
+
+		var checkboxes = $$(".ClaimBlameCell input[type='checkbox']");
+		checkboxes.each(function(it) {
+			if(it.checked) {
+				var cell = it.up('.ClaimBlameCell');
+				var testName = cell.getAttribute('name');
+				parameters.testNames.push(testName);
+			}
+		});
+
+		if(parameters.testNames.length <= 0) {
+			//No checkboxes are checked
+			var cell = button.up('.ClaimBlameCell');
+			var testName = cell.getAttribute('name');
+			parameters.testNames.push(testName);
+		}
 
 		var url = AtTaskClaimBlame.rootUrl + '/' + 'claimBlame/updateStatus';
-		//testNames
-		//status
-		//projectId
-
 		new Ajax.Request(url, {
 			method:'post',
-			parameters: {
-				testNames: testName,
-				status: button.getAttribute('name'),
-				projectId: AtTaskClaimBlame.projectId
-			},
+			parameters: parameters,
 			onSuccess:function (transport) {
-				console.log('successfully updated');
+				console.log('successfully updated', transport);
 				button.removeAttribute('disabled');
 			},
-			onFailure:function () {
-				console.log('failed to update');
+			onFailure:function (transport) {
+				console.log('failed to update', transport);
 				button.removeAttribute('disabled');
 			}
 		});
 	},
 
 	onUserChange: function(e) {
-		debugger;
 		var selectBox = e.target;
 		selectBox.setAttribute('disabled', true);
 
-		var selectedBoxes = $$('.ClaimBlameCell .bulkSelect[checked]');
-		var parameters;
-		if(selectedBoxes.length > 0) {
-			//bulk
-			parameters = {};
-		} else {
-			//single
+		var checkboxes = $$(".ClaimBlameCell input[type='checkbox']");
+		var selectedUser = selectBox.value;
+		var parameters = {
+			userId: selectedUser,
+			projectId: AtTaskClaimBlame.projectId,
+			notifyBlamed: true,
+			testNames: []
+		};
+
+		checkboxes.each(function(it) {
+			if(it.checked) {
+				var cell = it.up('.ClaimBlameCell');
+				var testName = cell.getAttribute('name');
+				parameters.testNames.push(testName);
+			}
+		});
+
+		if(parameters.testNames <= 0) {
+			//no checkboxes are checked
 			var cell = selectBox.up('.ClaimBlameCell');
 			var testName = cell.getAttribute('name');
-
-			var selectedUser = selectBox.value;
-			parameters = {
-				testNames: testName,
-				userId: selectedUser,
-				projectId: AtTaskClaimBlame.projectId,
-				notifyBlamed: true
-			};
+			parameters.testNames.push(testName);
 		}
-		console.log(e);
 
 		var url = AtTaskClaimBlame.rootUrl + '/' + 'claimBlame/blame';
 		new Ajax.Request(url, {
 			method:'post',
 			parameters: parameters,
 			onSuccess:function (transport) {
-				console.log('successfully updated');
+				console.log('successfully updated', transport);
 
 				selectBox.removeAttribute('disabled');
 			},
-			onFailure:function () {
-				console.log('failed to update');
+			onFailure:function (transport) {
+				console.log('failed to update', transport);
 
 				selectBox.removeAttribute('disabled');
 			}

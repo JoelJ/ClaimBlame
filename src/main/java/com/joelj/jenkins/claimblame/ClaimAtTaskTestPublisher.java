@@ -57,6 +57,25 @@ public class ClaimAtTaskTestPublisher extends TestDataPublisher {
 
 	@Override
 	public boolean before(AbstractBuild<?, ?> abstractBuild, Collection<TestResult> testResults) throws IOException, InterruptedException {
+		if(testResults != null) {
+			String key = abstractBuild.getProject().getName();
+			Blamer blamer = null;
+			for (TestResult testResult : testResults) {
+				if(testResult.getStatus() == TestStatus.FINISHED) {
+					if(blamer == null) {
+						String uniquifier = testResult.getUniquifier();
+						if(uniquifier != null) {
+							key = key + "." + uniquifier;
+						}
+						blamer = BlamerFactory.getBlamerForJob(key);
+					}
+					Status oldStatus = blamer.getStatus(testResult.getName());
+					if(oldStatus != Status.Unassigned) {
+						blamer.setStatus(testResult.getName(), Status.Fixed);
+					}
+				}
+			}
+		}
 		return true;
 	}
 
