@@ -17,7 +17,7 @@
 	display: none;
 }
 
-.ClaimBlameCell .status.Fixed input,
+.ClaimBlameCell .status.Fixed span,
 .ClaimBlameCell .status.Done span {
 	display: inline;
 }
