@@ -2,6 +2,6 @@
 		 xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 	<script src="${rootURL}/plugin/ClaimBlame/attaskClaimBlame.js"><!--empty--></script>
 	<script>
-		AtTaskClaimBlame.init('${rootURL}', '${it.projectId}');
+		AtTaskClaimBlame.init('${rootURL}', '${it.projectId}', '${it.currentUser.id}');
 	</script>
 </j:jelly>
