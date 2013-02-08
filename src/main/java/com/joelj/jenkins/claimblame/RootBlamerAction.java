@@ -18,6 +18,43 @@ import java.util.*;
  */
 @Extension
 public class RootBlamerAction implements RootAction {
+	public void doIndex(StaplerRequest request, StaplerResponse response) throws IOException {
+		String specificJob = request.getParameter("job");
+
+		Set<String> trackedJobs;
+		if(specificJob == null || specificJob.isEmpty()) {
+			trackedJobs = BlamerFactory.getTrackedJobs();
+		} else {
+			trackedJobs = new HashSet<String>(1);
+			trackedJobs.add(specificJob);
+		}
+
+		Map<String, Map<String, Map<String, String>>> jobAssignments = new HashMap<String, Map<String, Map<String, String>>>();
+
+		for (String trackedJob : trackedJobs) {
+			Blamer blamer = BlamerFactory.getBlamerForJob(trackedJob);
+			blamer.load();
+			Set<String> tests = blamer.getTests();
+			Map<String, Map<String, String>> testAssignments = new HashMap<String, Map<String, String>>();
+			for (String test : tests) {
+				Map<String, String> assignment = new HashMap<String, String>();
+				User culprit = blamer.getCulprit(test);
+				if(culprit != null) {
+					assignment.put("culprit", culprit.getId());
+					Status status = blamer.getStatus(test);
+					if(status != null) {
+						assignment.put("status", status.toString());
+					}
+				}
+				testAssignments.put(test, assignment);
+			}
+			jobAssignments.put(trackedJob, testAssignments);
+		}
+
+		JSONObject json = JSONObject.fromObject(jobAssignments);
+		json.write(response.getWriter());
+	}
+
 	public void doBlame(StaplerRequest request, StaplerResponse response,
 						@QueryParameter(value = "testNames", required = true) String[] testNames,
 						@QueryParameter(value = "userId", required = true) String userId,

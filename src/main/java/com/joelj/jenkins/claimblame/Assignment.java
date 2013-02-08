@@ -1,5 +1,7 @@
 package com.joelj.jenkins.claimblame;
 
+import java.io.Serializable;
+
 /**
  * Represents a assignment for a test. Including the user it's assigned to and the status of the assignment.
  *
@@ -7,7 +9,7 @@ package com.joelj.jenkins.claimblame;
  * Date: 5/26/12
  * Time: 12:30 AM
  */
-public class Assignment {
+public class Assignment implements Serializable {
 	private final String userId;
 	private Status status;
 
