@@ -16,19 +16,19 @@
 		<dependency>
 			<groupId>com.attask.jenkins</groupId>
 			<artifactId>TestReportTool</artifactId>
-			<version>1.3</version>
+			<version>1.5</version>
 		</dependency>
 	</dependencies>
 
 	<repositories>
 		<repository>
-			<id>repo.jenkins-ci.org</id>
-			<url>http://repo.jenkins-ci.org/public/</url>
-		</repository>
-		<repository>
 			<id>maven.attask.com</id>
 			<name>maven.attask.com-releases</name>
 			<url>http://maven.ops.ut.us.attask.com:8081/artifactory/repo.attask.com</url>
+		</repository>
+		<repository>
+			<id>repo.jenkins-ci.org</id>
+			<url>http://repo.jenkins-ci.org/public/</url>
 		</repository>
 	</repositories>
 

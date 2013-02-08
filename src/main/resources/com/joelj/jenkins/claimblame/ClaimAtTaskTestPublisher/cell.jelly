@@ -1,5 +1,6 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-	<div class="ClaimBlameCell">
+	<div class="ClaimBlameCell" name="${it.testName}">
+		<input type="checkbox" class="bulkSelect"/>
 		<select>
 			<option value="{null}">-- Unassigned --</option>
 			<j:forEach var="user" items="${it.users}">
@@ -15,14 +16,14 @@
 		</select>
 		<span class="status ${it.status}">
 			<j:choose>
-				<j:when test="${status != 'Accepted'}">
+				<j:when test="${it.status != 'Accepted'}">
 					<input type="button" name="Accepted" value="Accept"/>
 				</j:when>
 				<j:otherwise>
 					<input type="button" name="Done" value="Done"/>
 				</j:otherwise>
 			</j:choose>
-			<span>${status}</span>
+			<span>${it.status}</span>
 		</span>
 	</div>
 </j:jelly>
