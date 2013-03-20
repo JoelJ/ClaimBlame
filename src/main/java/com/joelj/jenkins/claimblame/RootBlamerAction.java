@@ -3,13 +3,23 @@ package com.joelj.jenkins.claimblame;
 import hudson.Extension;
 import hudson.model.RootAction;
 import hudson.model.User;
+import hudson.tasks.Mailer;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
+import javax.mail.Address;
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.Transport;
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 import java.io.IOException;
 import java.util.*;
+import java.util.logging.Logger;
 
 /**
  * User: Joel Johnson
@@ -18,6 +28,8 @@ import java.util.*;
  */
 @Extension
 public class RootBlamerAction implements RootAction {
+	private static final Logger LOGGER = Logger.getLogger("ClaimBlame");
+
 	public void doIndex(StaplerRequest request, StaplerResponse response) throws IOException {
 		String specificJob = request.getParameter("job");
 
@@ -98,6 +110,8 @@ public class RootBlamerAction implements RootAction {
 			if (notifyBlamed) {
 				notifyBlamed(userToBlame, testNames, projectId);
 			}
+		} catch (MessagingException e) {
+			LOGGER.severe("Couldn't send email\n" + ExceptionUtils.getFullStackTrace(e));
 		} finally {
 			JSONObject json = JSONObject.fromObject(changedObjects);
 			json.write(response.getWriter());
@@ -132,8 +146,111 @@ public class RootBlamerAction implements RootAction {
 		}
 	}
 
-	private void notifyBlamed(User user, String[] testNames, String projectId) {
-		//TODO: I'll do this later. I just really need to get the basic functionality working.
+	private void notifyBlamed(User blamedUser, String[] testNames, String projectId) throws MessagingException {
+		InternetAddress emailForBlamedUser = getEmailForUser(blamedUser);
+		if(emailForBlamedUser == null) {
+			LOGGER.info("blamed user was null, not sending email");
+			return;
+		}
+
+		if(testNames == null) {
+			testNames = new String[0];
+		}
+
+		if(projectId == null) {
+			projectId = "{Unknown Project}";
+			LOGGER.info("projectID was null. This shouldn't be possible. Using " + projectId);
+		}
+
+		User currentUser = User.current();
+		if(currentUser == null) {
+			currentUser = User.getUnknown();
+		}
+		InternetAddress emailForCurrentUser = getEmailForUser(currentUser);
+
+		if(emailForBlamedUser.equals(emailForCurrentUser)) {
+			LOGGER.info(currentUser.getDisplayName() + " assigned tests to themself. Skipping email.");
+			return;
+		}
+
+		String subject = generateSubject(currentUser, blamedUser, projectId);
+		String content = generateContent(currentUser, blamedUser, testNames, projectId);
+
+		MimeMessage msg = createEmailMessage(subject, content, emailForBlamedUser, emailForCurrentUser);
+		Transport.send(msg);
+	}
+
+	private MimeMessage createEmailMessage(String subject, String content, InternetAddress toEmail, InternetAddress ccEmail) throws MessagingException {
+		MimeMessage msg = new MimeMessage(Mailer.descriptor().createSession());
+
+		String adminAddress = Mailer.descriptor().getAdminAddress();
+		if(adminAddress != null && !adminAddress.isEmpty()) {
+			msg.setFrom(new InternetAddress(adminAddress));
+		}
+
+		if(toEmail != null) {
+			msg.setRecipients(Message.RecipientType.TO, new InternetAddress[] { toEmail } );
+		}
+
+		if(ccEmail != null) {
+			msg.setReplyTo(new Address[]{ccEmail});
+			msg.setRecipients(Message.RecipientType.CC, new InternetAddress[] { ccEmail } );
+		}
+
+		msg.setSentDate(new Date());
+		msg.setSubject(subject);
+		msg.setContent(content, "text/html");
+
+		return msg;
+	}
+
+	private String generateSubject(User currentUser, User blamedUser, String projectId) {
+		StringBuilder sb = new StringBuilder("Bespin Claim/Blame: ");
+
+		sb.append(currentUser.getDisplayName()).append(" assigned ").append(blamedUser.getDisplayName()).append(" to tests on ").append(projectId);
+
+		return sb.toString();
+	}
+
+	private String generateContent(User currentUser, User blamedUser, String[] testNames, String projectId) {
+		StringBuilder sb = new StringBuilder("<html><body>");
+
+		sb.append("<div>").append(blamedUser.getDisplayName()).append(" has been assigned to the following tests on ").append(projectId).append("</div>");
+
+		sb.append("<ul>");
+		if(testNames != null) {
+			for (String testName : testNames) {
+				sb.append("<li>").append(testName).append("</li>");
+			}
+		} else {
+			sb.append("<li>").append("No Tests. Derp?").append("</li>");
+		}
+		sb.append("</ul>");
+
+		return sb.append("</body></html>").toString();
+	}
+
+
+	private InternetAddress getEmailForUser(User user) throws AddressException {
+		if(user == null) {
+			return null;
+		}
+
+		if(user.getId().equals(User.getUnknown().getId())) {
+			return null;
+		}
+
+		Mailer.UserProperty mailProperty = user.getProperty(Mailer.UserProperty.class);
+		if(mailProperty == null) {
+			return null;
+		}
+
+		String userEmailAddress = mailProperty.getAddress();
+		if(userEmailAddress == null || userEmailAddress.isEmpty()) {
+			return null;
+		}
+
+		return new InternetAddress(userEmailAddress);
 	}
 
 	public String getIconFileName() {
