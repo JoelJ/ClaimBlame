@@ -21,5 +21,11 @@ public interface Blamer {
 	void save() throws IOException;
 	void load();
 
+	/**
+	 * Invoked immediately after creation. This should never be called by the user.
+	 * @param jobName The name of the job that is being tracked.
+	 */
+	void setJobName(String jobName);
+
 	Set<String> getTests();
 }

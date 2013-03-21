@@ -2,11 +2,10 @@ package com.joelj.jenkins.claimblame;
 
 import hudson.model.Job;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.WeakHashMap;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Temporary location to get the blamer for a job.
@@ -17,7 +16,9 @@ import java.util.WeakHashMap;
  * Time: 12:22 AM
  */
 public class BlamerFactory {
-	private static Map<String, Blamer> blamers = new WeakHashMap<String, Blamer>();
+	private static Class<? extends Blamer> blamerClass = FileSystemBlamer.class; //TODO: make this configurable
+
+	private static Map<String, Blamer> blamers = new ConcurrentHashMap<String, Blamer>();
 
 	public static Blamer getBlamerForJob(Job job) {
 		return getBlamerForJob(job.getFullName());
@@ -26,10 +27,17 @@ public class BlamerFactory {
 	public static Blamer getBlamerForJob(String jobName) {
 		Blamer result;
 		if(!blamers.containsKey(jobName)) {
-			FileSystemBlamer fileSystemBlamer = new FileSystemBlamer(jobName);
-			fileSystemBlamer.load();
-			blamers.put(jobName, fileSystemBlamer);
-			result = fileSystemBlamer;
+			try {
+				Blamer blamer = blamerClass.newInstance();
+				blamer.setJobName(jobName);
+				blamer.load();
+				blamers.put(jobName, blamer);
+				result = blamer;
+			} catch (InstantiationException e) {
+				throw new RuntimeException(e);
+			} catch (IllegalAccessException e) {
+				throw new RuntimeException(e);
+			}
 		} else {
 			result = blamers.get(jobName);
 		}
@@ -37,6 +45,31 @@ public class BlamerFactory {
 	}
 
 	public static Set<String> getTrackedJobs() {
-		return blamers.keySet();
+		Method getTrackedJobsMethod = null;
+		try {
+			getTrackedJobsMethod = blamerClass.getMethod("getTrackedJobs");
+		} catch (NoSuchMethodException ignore) {
+			//FIXME: this is gross.
+		}
+
+		if(getTrackedJobsMethod != null && Set.class.isAssignableFrom(getTrackedJobsMethod.getReturnType())) {
+			getTrackedJobsMethod.setAccessible(true);
+			Object result;
+			try {
+				result = getTrackedJobsMethod.invoke(null);
+			} catch (IllegalAccessException e) {
+				throw new RuntimeException(e);
+			} catch (InvocationTargetException e) {
+				throw new RuntimeException(e);
+			}
+
+			if(result instanceof Set) {
+				//noinspection unchecked
+				return (Set<String>)result;
+			}
+			throw new RuntimeException("Unable to find tracked jobs. Returned an invalid value.");
+		} else {
+			return blamers.keySet();
+		}
 	}
 }

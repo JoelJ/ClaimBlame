@@ -1,5 +1,6 @@
 package com.joelj.jenkins.claimblame;
 
+import com.google.common.collect.ImmutableSet;
 import com.thoughtworks.xstream.XStream;
 import hudson.XmlFile;
 import hudson.model.*;
@@ -7,6 +8,7 @@ import hudson.model.listeners.SaveableListener;
 import hudson.util.XStream2;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,9 +31,13 @@ public class FileSystemBlamer implements Blamer, Saveable {
 	private String jobName;
 	public Map<String, Assignment> culprits;
 
-	FileSystemBlamer(String jobName) {
-		this.jobName = jobName;
+	@SuppressWarnings("UnusedDeclaration") //Called via reflection
+	FileSystemBlamer() {
 		this.culprits = new HashMap<String, Assignment>();
+	}
+
+	public void setJobName(String jobName) {
+		this.jobName = jobName;
 	}
 
 	@Override
@@ -94,6 +100,24 @@ public class FileSystemBlamer implements Blamer, Saveable {
 	public synchronized void save() throws IOException {
 		getConfigFile().write(this);
 		SaveableListener.fireOnChange(this, getConfigFile());
+	}
+
+	public static Set<String> getTrackedJobs() {
+		File rootDir = getRootDir();
+		File[] files = rootDir.listFiles(new FileFilter() {
+			@Override
+			public boolean accept(File file) {
+				return file.isDirectory();
+			}
+		});
+
+		ImmutableSet.Builder<String> builder = ImmutableSet.builder();
+		if(files != null) {
+			for (File file : files) {
+				builder.add(file.getName());
+			}
+		}
+		return builder.build();
 	}
 
 	public synchronized void load() {
