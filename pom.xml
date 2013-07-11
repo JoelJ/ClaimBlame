@@ -24,7 +24,7 @@
 		<repository>
 			<id>maven.attask.com</id>
 			<name>maven.attask.com-releases</name>
-			<url>http://maven.ops.ut.us.attask.com:8081/artifactory/repo.attask.com</url>
+			<url>http://maven.mycloud.attask.com/artifactory/repo.attask.com</url>
 		</repository>
 		<repository>
 			<id>repo.jenkins-ci.org</id>
