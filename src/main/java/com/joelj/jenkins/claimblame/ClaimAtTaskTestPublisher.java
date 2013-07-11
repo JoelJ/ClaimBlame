@@ -68,12 +68,16 @@ public class ClaimAtTaskTestPublisher extends TestDataPublisher {
 							key = key + "." + uniquifier;
 						}
 						blamer = BlamerFactory.getBlamerForJob(key);
+						blamer.startTransaction();
 					}
 					Status oldStatus = blamer.getStatus(testResult.getName());
-					if(oldStatus != Status.Unassigned) {
+					if(oldStatus != Status.Unassigned && oldStatus != Status.Fixed) {
 						blamer.setStatus(testResult.getName(), Status.Fixed);
 					}
 				}
+			}
+			if(blamer != null) {
+				blamer.endTransaction();
 			}
 		}
 		return true;

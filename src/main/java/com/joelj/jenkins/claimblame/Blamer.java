@@ -28,4 +28,8 @@ public interface Blamer {
 	void setJobName(String jobName);
 
 	Set<String> getTests();
+
+	void startTransaction();
+
+	void endTransaction() throws IOException;
 }
