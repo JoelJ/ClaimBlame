@@ -28,6 +28,8 @@ public class FileSystemBlamer implements Blamer, Saveable {
 	private static final Logger LOGGER = Logger.getLogger(FileSystemBlamer.class.getName());
 	private transient boolean loaded = false;
 
+	private transient boolean inTransaction = false;
+
 	private String jobName;
 	public Map<String, Assignment> culprits;
 
@@ -98,8 +100,25 @@ public class FileSystemBlamer implements Blamer, Saveable {
 
 	@Override
 	public synchronized void save() throws IOException {
+		if(!inTransaction) {
+			write();
+		}
+	}
+
+	private void write() {
 		getConfigFile().write(this);
 		SaveableListener.fireOnChange(this, getConfigFile());
+	}
+
+	@Override
+	public void startTransaction() {
+		inTransaction = true;
+	}
+
+	@Override
+	public void endTransaction() throws IOException {
+		inTransaction = false;
+		write();
 	}
 
 	public static Set<String> getTrackedJobs() {
