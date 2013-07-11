@@ -105,7 +105,7 @@ public class FileSystemBlamer implements Blamer, Saveable {
 		}
 	}
 
-	private void write() {
+	private void write() throws IOException {
 		getConfigFile().write(this);
 		SaveableListener.fireOnChange(this, getConfigFile());
 	}
