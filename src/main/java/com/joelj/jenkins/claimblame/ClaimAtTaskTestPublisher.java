@@ -73,7 +73,9 @@ public class ClaimAtTaskTestPublisher extends TestDataPublisher {
 					Status oldStatus = blamer.getStatus(testResult.getName());
 					if(oldStatus != Status.Unassigned && oldStatus != Status.Fixed) {
 						blamer.setStatus(testResult.getName(), Status.Fixed);
+                        blamer.setCulprit(testResult.getName(), null);
 					}
+
 				}
 			}
 			if(blamer != null) {
